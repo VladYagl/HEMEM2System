@@ -15,7 +15,7 @@ dependencies {
     testImplementation(kotlin("test-junit"))
 
 //    implementation("dev.kord:kord-core:0.8.0-M5")
-    implementation("com.jessecorbett:diskord-bot:2.0.2")
+    implementation("com.jessecorbett:diskord-bot:2.1.1")
 
 
     implementation("com.beust:klaxon:5.5")

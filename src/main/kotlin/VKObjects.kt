@@ -1,3 +1,4 @@
+import com.beust.klaxon.Klaxon
 import com.petersamokhin.vksdk.core.client.VkApiClient
 import com.petersamokhin.vksdk.core.http.paramsOf
 import com.petersamokhin.vksdk.http.VkKtorHttpClient
@@ -6,6 +7,8 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.features.logging.*
 import kotlinx.coroutines.Dispatchers
 import java.io.StringReader
+
+private val klaxon = Klaxon()
 
 data class Size(
         val url: String,
