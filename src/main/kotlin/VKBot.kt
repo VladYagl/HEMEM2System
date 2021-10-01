@@ -20,6 +20,17 @@ class VKBot {
                     val id = messageEvent.message.peerId
 
                     boys.find { it.chat == id }?.let { boy ->
+                        if (text.startsWith("!help")) {
+                            vkClient.sendMessage { peerId = id; message = "!quit - прекратить пересылку" }.execute()
+                            return@let
+                        }
+                        if (text.startsWith("!quit")) {
+                            boys.remove(boy)
+                            save()
+                            vkClient.sendMessage { peerId = id; message = "оке я о тебе забыл" }.execute()
+                            return@let
+                        }
+
                         vkChannelId?.let {
                             context.channel(it).sendMessage(boy.tag + ": " + text)
                             vkClient.sendMessage { peerId = id; message = "ушло" }.execute()
@@ -45,26 +56,52 @@ class VKBot {
         vkClient.startLongPolling()
     }
 
+    private suspend fun informBoy(m: Message, boy: Boy) {
+        vkClient.sendMessage {
+            peerId = boy.chat
+            var text = m.content
+            m.usersMentioned.forEach {
+                text = text.replace("<@!${it.id}>", "@" + it.username)
+            }
+
+            message = m.author.tag + ": " + text
+        }.execute()
+    }
+
+    private suspend fun addReaction(reaction: String, m: Message) {
+        with(context) {
+            channel(m.channelId).addMessageReaction(
+                m.id,
+                guild(m.guildId!!).getEmoji().find { it.name == reaction }!!
+            )
+        }
+    }
+
     suspend fun onMessage(m: Message) {
         with(context) {
+            if (m.mentionsEveryone) {
+                boys.forEach { informBoy(m, it) }
+
+                addReaction("WutFace", m)
+                addReaction("Vjuh", m)
+            }
             m.usersMentioned.forEach { user ->
                 boys.find { it.tag == user.tag }?.let { boy ->
                     channel(m.channelId).triggerTypingIndicator()
-                    vkClient.sendMessage {
-                        peerId = boy.chat
-                        var text = m.content
-                        m.usersMentioned.forEach {
-                            text = text.replace("<@!${it.id}>", "@" + it.username)
-                        }
+                    informBoy(m, boy)
 
-                        message = m.author.tag + ": " + text
-                    }.execute()
+                    addReaction("Vjuh", m)
+//                    channel(m.channelId).sendMessage("Передал пидорасу в вк")
+                }
+            }
 
-                    channel(m.channelId).addMessageReaction(
-                        m.id,
-                        guild(m.guildId!!).getEmoji().find { it.name == "Vjuh" }!!
-                    )
-//                        channel(m.channelId).sendMessage("Передал пидорасу в вк")
+            if (m.rolesIdsMentioned.isNotEmpty()) {
+                val members = guild(m.guildId!!).getMembers()
+
+                m.rolesIdsMentioned.forEach { roleId ->
+                    members.filter { it.roleIds.contains(roleId) }
+                        .mapNotNull { member -> boys.find { it.tag == member.user?.tag } }
+                        .forEach { informBoy(m, it) }
                 }
             }
         }

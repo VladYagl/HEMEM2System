@@ -47,9 +47,6 @@ suspend fun safe(channel: ChannelClient? = null, body: suspend () -> Unit) {
     }
 }
 
-// TODO: when group calls (@clasher)
-// TODO: resend everything to vk
-
 val httpClient = VkOkHttpClient()
 //    val httpClient = httpClientWithLog()
 
@@ -79,15 +76,24 @@ suspend fun main() {
 
             command("help") { context ->
                 channel(context.channelId).sendMessage(
-                    """**!vk** - линка чтобы получать сообщения через меня в ВК
+                    """
+***Discord Команды***
+**!vk** - линка чтобы получать сообщения через меня в ВК
 **!vk-init** - пересылать сообщения из ВК в этот канал
 **!img** - рандомная пикча с сервера
-**!morda** - репостить морду в этот канал *(WARNING: можно случайно дважды запустить на один канал)*"""
-                )
+**!git** - линк на гитхаб
+**!morda** - репостить морду в этот канал *(WARNING: можно случайно дважды запустить на один канал)*
+
+***ВК Команды***
+**!quit** - прекратить пересылку""")
             }
 
             command("vk") { context ->
                 channel(context.channelId).sendMessage("https://vk.com/im?sel=-207396896")
+            }
+
+            command("git") { context ->
+                channel(context.channelId).sendMessage("https://github.com/VladYagl/HEMEM2System")
             }
 
             command("vk-init") { context ->
