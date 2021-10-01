@@ -46,7 +46,7 @@ class VKBot {
                             vkClient.sendMessage { peerId = id; message = "гж" }.execute()
                         } else {
                             vkClient.sendMessage { peerId = id; message = "дискорд тэг плз" }
-                                .execute()
+                                    .execute()
                         }
                     }
                 }
@@ -68,12 +68,17 @@ class VKBot {
         }.execute()
     }
 
-    private suspend fun addReaction(reaction: String, m: Message) {
+    suspend fun addReaction(reaction: String, m: Message) {
         with(context) {
-            channel(m.channelId).addMessageReaction(
-                m.id,
-                guild(m.guildId!!).getEmoji().find { it.name == reaction }!!
-            )
+            guild(m.guildId!!).getEmoji().find { it.name == reaction }?.let {
+                channel(m.channelId).addMessageReaction(
+                        m.id, it
+                )
+            } ?: run {
+                channel(m.channelId).addMessageReaction(
+                        m.id, "\uD83D\uDC4C"
+                )
+            }
         }
     }
 
@@ -100,8 +105,8 @@ class VKBot {
 
                 m.rolesIdsMentioned.forEach { roleId ->
                     members.filter { it.roleIds.contains(roleId) }
-                        .mapNotNull { member -> boys.find { it.tag == member.user?.tag } }
-                        .forEach { informBoy(m, it) }
+                            .mapNotNull { member -> boys.find { it.tag == member.user?.tag } }
+                            .forEach { informBoy(m, it) }
                 }
             }
         }

@@ -8,7 +8,7 @@ import io.ktor.client.features.logging.*
 import kotlinx.coroutines.Dispatchers
 import java.io.StringReader
 
-private val klaxon = Klaxon()
+val klaxon = Klaxon()
 
 data class Size(
         val url: String,

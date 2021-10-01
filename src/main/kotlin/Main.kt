@@ -4,20 +4,30 @@ import com.jessecorbett.diskord.bot.bot
 import com.jessecorbett.diskord.bot.classicCommands
 import com.jessecorbett.diskord.bot.events
 import com.jessecorbett.diskord.util.DiskordInternals
+import com.jessecorbett.diskord.util.authorId
+import com.jessecorbett.diskord.util.isFromBot
 import com.jessecorbett.diskord.util.sendMessage
 import com.petersamokhin.vksdk.http.VkOkHttpClient
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import java.io.Serializable
+import java.io.StringReader
 
 val TAG = ".*#[0-9]{4}".toRegex()
 val User.tag get() = this.username + "#" + this.discriminator
 
 data class Boy(
-    val tag: String,
-    val chat: Int
+        val tag: String,
+        val chat: Int
 ) : Serializable
 
 var attachments = HashMap<String, ArrayList<String>>()
@@ -47,6 +57,7 @@ suspend fun safe(channel: ChannelClient? = null, body: suspend () -> Unit) {
     }
 }
 
+val gitHttpClient = HttpClient(CIO)
 val httpClient = VkOkHttpClient()
 //    val httpClient = httpClientWithLog()
 
@@ -69,14 +80,20 @@ suspend fun main() {
                 }
             }
 
-            onMessageCreate { safe(channel(it.channelId)) { vkBot.onMessage(it) } }
+            onMessageCreate {
+                safe(channel(it.channelId)) {
+                    if (!it.isFromBot) {
+                        vkBot.onMessage(it)
+                    }
+                }
+            }
         }
 
         classicCommands(commandPrefix = "!") {
 
             command("help") { context ->
                 channel(context.channelId).sendMessage(
-                    """
+                        """
 ***Discord Команды***
 **!vk** - линка чтобы получать сообщения через меня в ВК
 **!vk-init** - пересылать сообщения из ВК в этот канал
@@ -106,6 +123,40 @@ suspend fun main() {
 
 
             command("img") { safe(channel(it.channelId)) { img(it) } }
+
+            command("issues") { message ->
+                safe(channel(message.channelId)) {
+                    val req = gitHttpClient.get<String>(ISSUES) {
+                        headers {
+                            append("Accept", "application/vnd.github.v3+json")
+                        }
+                    }
+
+                    channel(message.channelId).sendMessage((
+                            klaxon.parseArray<Issue>(StringReader(req))?.map {
+                                "> **${it.title}** | *${it.state}*\n" + (it.body?.let { body ->
+                                    "$body\n"
+                                } ?: "")
+                            }?.joinToString("\n")
+                                    ?: "ну бля! опять сломалось") + "https://github.com/VladYagl/HEMEM2System/issues")
+                }
+            }
+
+            command("issue-add") { message ->
+                safe(channel(message.channelId)) {
+                    val req = gitHttpClient.post<HttpResponse>(ISSUES) {
+                        headers {
+                            append("Accept", "application/vnd.github.v3+json")
+                            append("Authorization", "token $GITHUB_API_TOKEN")
+                        }
+                        body = """{"title":"${message.content.split(" ").drop(1).joinToString(" ")}"}"""
+                    }
+
+                    if (req.status == HttpStatusCode.Created) {
+                        vkBot.addReaction("windchair", message)
+                    }
+                }
+            }
         }
     }
 }
