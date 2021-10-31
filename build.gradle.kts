@@ -1,8 +1,12 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
     kotlin("jvm") version "1.5.30"
     kotlin("plugin.serialization") version "1.5.30"
+    java
+    idea
+    id("com.github.johnrengelman.shadow") version "6.1.0"
 }
 group = "me.vlad"
 version = "1.0-SNAPSHOT"
@@ -11,6 +15,7 @@ val vkSdkVersion = "0.0.8"
 repositories {
     mavenCentral()
 }
+
 dependencies {
     testImplementation(kotlin("test-junit"))
 
@@ -36,6 +41,25 @@ dependencies {
     implementation("io.ktor:ktor-client-logging-jvm:1.6.3")
     implementation("io.ktor:ktor-client-core:1.6.3")
 }
+
+idea {
+    module {
+        isDownloadJavadoc = true
+        isDownloadSources = true
+    }
+}
+
 tasks.withType<KotlinCompile>() {
     kotlinOptions.jvmTarget = "11"
+}
+
+tasks.withType<Jar> {
+    manifest {
+        attributes("Main-Class" to "MainKt")
+    }
+}
+
+tasks.withType<ShadowJar> {
+    archiveVersion.set(rootProject.version.toString().removeSuffix("-SNAPSHOT"))
+    archiveClassifier.set("")
 }
