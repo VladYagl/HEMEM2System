@@ -43,6 +43,7 @@ fun load() {
     boys = load(boysFile, boys)
     vkChannelId = load(vkFile, vkChannelId)
     println()
+    println("VK-Init channel id: $vkChannelId")
 
     for (boy in boys) {
         println(boy)

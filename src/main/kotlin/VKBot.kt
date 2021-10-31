@@ -7,6 +7,8 @@ import com.petersamokhin.vksdk.core.client.VkApiClient
 import com.petersamokhin.vksdk.core.model.VkSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonPrimitive
 
 class VKBot {
     lateinit var context: BotContext
@@ -55,11 +57,12 @@ class VKBot {
                 }
             }
         }
-        vkClient.onEachEvent {
-            println("VK EVENT: $it\n")
+        vkClient.onEachEvent {event ->
+            val boy = boys.find { event.`object`.toString().contains(it.chat.toString()) }
+            println("VK EVENT |${boy}|:\n$event\n")
         }
 
-        vkClient.startLongPolling(true)
+        vkClient.startLongPolling()
     }
 
     private suspend fun informBoy(m: Message, boy: Boy) {
