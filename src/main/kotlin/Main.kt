@@ -23,7 +23,7 @@ import java.io.Serializable
 import java.io.StringReader
 
 val TAG = ".*#[0-9]{4}".toRegex()
-val User.tag get() = this.username + "#" + this.discriminator
+val User.tag get() = this.username + "#" + this.discriminator.toString().padStart(4, '0')
 
 data class Boy(
         val tag: String,
@@ -44,7 +44,7 @@ suspend fun safe(channel: ChannelClient? = null, body: suspend () -> Unit) {
         println()
         println("=============================")
         println()
-        e.printStackTrace()
+        e.printStackTrace(System.out)
 
         try {
             channel?.sendMessage("я хз что-то опять сломалось")
@@ -52,7 +52,7 @@ suspend fun safe(channel: ChannelClient? = null, body: suspend () -> Unit) {
             println()
             println("NOT AGAIN!!!")
             println()
-            e.printStackTrace()
+            e.printStackTrace(System.out)
         }
     }
 }
@@ -81,6 +81,7 @@ suspend fun main() {
             }
 
             onMessageCreate {
+                println("${it.guild?.getGuild()?.name}|${it.author.tag}:[${it.content}] -- received")
                 safe(channel(it.channelId)) {
                     if (!it.isFromBot) {
                         vkBot.onMessage(it)
@@ -143,7 +144,7 @@ suspend fun main() {
                                     "$body\n"
                                 } ?: "")
                             }?.joinToString("\n")
-                                    ?: "ну бля! опять сломалось") + "https://github.com/VladYagl/HEMEM2System/issues")
+                                    ?: "ну бля! опять сломалось"))
                 }
             }
 

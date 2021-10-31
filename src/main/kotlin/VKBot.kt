@@ -1,4 +1,5 @@
 import com.jessecorbett.diskord.api.channel.ChannelClient
+import com.jessecorbett.diskord.api.common.Emoji
 import com.jessecorbett.diskord.api.common.Message
 import com.jessecorbett.diskord.bot.BotContext
 import com.jessecorbett.diskord.util.sendMessage
@@ -10,6 +11,7 @@ import kotlinx.coroutines.launch
 class VKBot {
     lateinit var context: BotContext
     private val vkClient = VkApiClient(VK_GROUP_ID, VK_GROUP_KEY, VkApiClient.Type.Community, VkSettings(httpClient))
+    private val emojis = HashMap<String, List<Emoji>>()
 
     suspend fun init(context: BotContext) {
         this.context = context
@@ -33,7 +35,8 @@ class VKBot {
 
                         vkChannelId?.let {
                             context.channel(it).sendMessage(boy.tag + ": " + text)
-                            vkClient.sendMessage { peerId = id; message = "ушло" }.execute()
+//                            vkClient.sendMessage { peerId = id; message = "ушло" }.execute()
+                            vkClient.sendMessage { peerId = id; message = "\uD83D\uDCE8" }.execute()
                         } ?: run {
                             vkClient.sendMessage {
                                 peerId = id; message = "[вк -> дискорд] не настроен (!vk-init)"
@@ -46,14 +49,17 @@ class VKBot {
                             vkClient.sendMessage { peerId = id; message = "гж" }.execute()
                         } else {
                             vkClient.sendMessage { peerId = id; message = "дискорд тэг плз" }
-                                    .execute()
+                                .execute()
                         }
                     }
                 }
             }
         }
+        vkClient.onEachEvent {
+            println("VK EVENT: $it\n")
+        }
 
-        vkClient.startLongPolling()
+        vkClient.startLongPolling(true)
     }
 
     private suspend fun informBoy(m: Message, boy: Boy) {
@@ -61,7 +67,7 @@ class VKBot {
             peerId = boy.chat
             var text = m.content
             m.usersMentioned.forEach {
-                text = text.replace("<@!${it.id}>", "@" + it.username)
+                text = text.replace("<@!${it.id}>", "@" + it.tag)
             }
 
             message = m.author.tag + ": " + text
@@ -70,45 +76,51 @@ class VKBot {
 
     suspend fun addReaction(reaction: String, m: Message) {
         with(context) {
-            guild(m.guildId!!).getEmoji().find { it.name == reaction }?.let {
+            emojis.getOrPut(m.guildId!!) {
+                guild(m.guildId!!).getEmoji()
+            }.find { it.name == reaction }?.let {
                 channel(m.channelId).addMessageReaction(
-                        m.id, it
+                    m.id, it
                 )
             } ?: run {
+                // Use unicode emoji if server doesn't have 'Vjuh' (e.g. my test server)
                 channel(m.channelId).addMessageReaction(
-                        m.id, "\uD83D\uDC4C"
+                    m.id, "\uD83D\uDC4C"
                 )
             }
         }
     }
 
     suspend fun onMessage(m: Message) {
-        with(context) {
-            if (m.mentionsEveryone) {
-                boys.forEach { informBoy(m, it) }
+        if (m.mentionsEveryone) {
+            boys.forEach { informBoy(m, it) }
 
-                addReaction("WutFace", m)
+            addReaction("WutFace", m)
+            addReaction("Vjuh", m)
+        }
+        m.usersMentioned.forEach { user ->
+            println("${user.tag} was mentioned")
+            boys.find { it.tag == user.tag }?.let { boy ->
+                println("$boy was matched\n")
+                // not sure about typing
+//                    channel(m.channelId).triggerTypingIndicator()
+                informBoy(m, boy)
+
                 addReaction("Vjuh", m)
-            }
-            m.usersMentioned.forEach { user ->
-                boys.find { it.tag == user.tag }?.let { boy ->
-                    channel(m.channelId).triggerTypingIndicator()
-                    informBoy(m, boy)
-
-                    addReaction("Vjuh", m)
 //                    channel(m.channelId).sendMessage("Передал пидорасу в вк")
-                }
-            }
-
-            if (m.rolesIdsMentioned.isNotEmpty()) {
-                val members = guild(m.guildId!!).getMembers()
-
-                m.rolesIdsMentioned.forEach { roleId ->
-                    members.filter { it.roleIds.contains(roleId) }
-                            .mapNotNull { member -> boys.find { it.tag == member.user?.tag } }
-                            .forEach { informBoy(m, it) }
-                }
             }
         }
+
+        //TODO: group mentions
+
+//        if (m.rolesIdsMentioned.isNotEmpty()) {
+//            val members = guild(m.guildId!!).getMembers()
+//
+//            m.rolesIdsMentioned.forEach { roleId ->
+//                members.filter { it.roleIds.contains(roleId) }
+//                    .mapNotNull { member -> boys.find { it.tag == member.user?.tag } }
+//                    .forEach { informBoy(m, it) }
+//            }
+//        }
     }
 }
