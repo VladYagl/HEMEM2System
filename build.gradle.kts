@@ -1,7 +1,9 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.jetbrains.kotlin.cli.jvm.main
 
 plugins {
+    application
     kotlin("jvm") version "1.5.30"
     kotlin("plugin.serialization") version "1.5.30"
     java
@@ -40,6 +42,10 @@ dependencies {
     implementation("io.ktor:ktor-client-cio:1.6.3")
     implementation("io.ktor:ktor-client-logging-jvm:1.6.3")
     implementation("io.ktor:ktor-client-core:1.6.3")
+}
+
+application {
+    mainClassName = "MainKt"
 }
 
 idea {
