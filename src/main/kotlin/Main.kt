@@ -4,7 +4,6 @@ import com.jessecorbett.diskord.bot.bot
 import com.jessecorbett.diskord.bot.classicCommands
 import com.jessecorbett.diskord.bot.events
 import com.jessecorbett.diskord.util.DiskordInternals
-import com.jessecorbett.diskord.util.authorId
 import com.jessecorbett.diskord.util.isFromBot
 import com.jessecorbett.diskord.util.sendMessage
 import com.petersamokhin.vksdk.http.VkOkHttpClient
@@ -17,8 +16,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
 import java.io.Serializable
 import java.io.StringReader
 
@@ -57,8 +54,13 @@ suspend fun safe(channel: ChannelClient? = null, body: suspend () -> Unit) {
     }
 }
 
+val httpClientConfig = com.petersamokhin.vksdk.core.http.HttpClientConfig(
+        connectTimeout = 300_000,
+        readTimeout = 300_000,
+)
+
 val gitHttpClient = HttpClient(CIO)
-val httpClient = VkOkHttpClient()
+val httpClient = VkOkHttpClient(httpClientConfig)
 //    val httpClient = httpClientWithLog()
 
 @DiskordInternals
